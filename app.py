@@ -55,7 +55,7 @@ uploaded_files = st.file_uploader(
 )
 
 # =========================
-# PARSER MAP (DYNAMIC)
+# PARSER MAP
 # =========================
 PARSER_MAP = {
     "DV360": "dv360",
@@ -94,14 +94,16 @@ def dummy_parser(files, platform):
 if uploaded_files:
 
     start_time = time.time()
-
     parser_name = PARSER_MAP.get(platform)
 
     if parser_name:
         try:
-            module = importlib.import_module(f"parsers.{parser_name}")
+            # ✅ FIXED IMPORT (NO parsers.)
+            module = importlib.import_module(parser_name)
+
             parser_function = getattr(module, f"{parser_name}_parser")
             df = parser_function(uploaded_files)
+
         except Exception as e:
             st.error(f"{platform} parser error: {e}")
             st.stop()
@@ -120,10 +122,13 @@ if uploaded_files:
     col1, col2, col3 = st.columns(3)
 
     col1.metric("Total Rows", len(df))
-    col2.metric(
-        "Total Spend",
-        f"${df['Amount'].sum():,.2f}" if "Amount" in df.columns and df["Amount"].notna().any() else "$0"
-    )
+
+    if "Amount" in df.columns and df["Amount"].notna().any():
+        total_spend = df["Amount"].sum()
+    else:
+        total_spend = 0
+
+    col2.metric("Total Spend", f"${total_spend:,.2f}")
     col3.metric("Processing Time", f"{process_time}s")
 
     st.divider()
